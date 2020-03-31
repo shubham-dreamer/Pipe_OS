@@ -28,6 +28,10 @@ int main(int argc,char *argv[]) {                 //argc for argument count  and
   }
   
   
+
+}
+  
+  
   
   
   
@@ -49,11 +53,49 @@ void producer(int pipeWriteSide,char* filename) {
   
   instream=fopen(filename,"r");
   if (instream==NULL) {
-    fprintf(stderr,"Can't open %s\n",filename);
+    fprintf(stderr,"Unable to open %s\n",filename);
     fflush(stderr);
     close(pipeWriteSide);   // close pipe if error is there
     exit(EXIT_FAILURE);
   }
+  
+  while(fgets(buffer,BUFFER_SIZE,instream)) {          // for reading words
+   
+    if (sscanf(buffer,"%[a-zA-Z1-9./]",word)==1) {          // for reading and sending to consumer
+      int len_word = strlen(word)+1;                       //+1 for null character
+      
+	  //  for sending  size of the word 
+      if(write(pipeWriteSide,(char*)&len_word,sizeof(int)) != sizeof(int)) 
+          break;
+      
+      if(write(pipeWriteSide,word,len_word) != len_word)
+  	  break;
+      
+      counter++;
+    }
+  }
+   printf("Words sent by producer : %d words\n",counter);               // print counts of words
+}
+// consumer process start
+void consumer(int pipeReadSide) {
+  static char buffer[BUFFER_SIZE];// creating buffer
+  int bytes,counter,len,left,j;
+  
+  int cracked[numaccts];
+
+  for(j=0;j<numaccts;j++)
+    cracked[i]=0;
+  left=numaccts;
+  counter=0;
+  printf("%d accounts to crack\n",left);
+  fflush(stdout);
+  
+  while(bytes!=0 && left>0);
+  printf("%d accounts cracked, %d not cracked, %d words tried\n",
+         numaccts-left,left,counter);                                      //prints results
+  fflush(stdout);
+
+}
 
   
  
