@@ -46,7 +46,7 @@ int main(int argc,char *argv[]) {                 //argc for argument count  and
 void producer(int pipeWriteSide,char* filename) {
   
   static char buffer[BUFFER_SIZE];
-  static char word[BUFFER_SIZE];
+  static char w[BUFFER_SIZE];
   FILE *instream;
   int counter=0;
   signal(SIGPIPE,SIG_IGN);      //to ignore the SIGPIPE exception when occured 
@@ -61,14 +61,16 @@ void producer(int pipeWriteSide,char* filename) {
   
   while(fgets(buffer,BUFFER_SIZE,instream)) {          // for reading words
    
-    if (sscanf(buffer,"%[a-zA-Z1-9./]",word)==1) {          // for reading and sending to consumer
+    if (sscanf(buffer,"%[a-zA-Z1-9./]",w)==1) {  // for reading and sending to consumer,  
+											//[a-zA-Z1-9./]--> used as regular expression for matching one character froma-z and A-Z and 1-9
+
       int len_word = strlen(word)+1;                       //+1 for null character
       
 	  //  for sending  size of the word 
       if(write(pipeWriteSide,(char*)&len_word,sizeof(int)) != sizeof(int)) 
           break;
       
-      if(write(pipeWriteSide,word,len_word) != len_word)
+      if(write(pipeWriteSide,w,len_word) != len_word)
   	  break;
       
       counter++;
@@ -79,7 +81,7 @@ void producer(int pipeWriteSide,char* filename) {
 // consumer process start
 void consumer(int pipeReadSide) {
   static char buffer[BUFFER_SIZE];// creating buffer
-  int bytes,counter,len,left,j;
+  int b,counter,len,left,j;
   
   int cracked[numaccts];
 
@@ -90,7 +92,59 @@ void consumer(int pipeReadSide) {
   printf("%d accounts to crack\n",left);
   fflush(stdout);
   
-  while(bytes!=0 && left>0);
+  do {
+    // word length  
+    b=read(pipeReadSide,(char*)&len,sizeof(int));
+
+    if (b>0) {
+
+      if (b!=sizeof(int)) {
+	if (b<0)
+	  perror("read");
+	else {
+	  fprintf(stderr,"read(int) failed (%d read)\n",b);
+	  fflush(stderr);
+	}
+	//closing the pipe
+        close(pipeReadSide);
+	//error
+        exit(EXIT_FAILURE);
+      }
+
+      // then the word 
+      b=read(pipeReadSide,buffer,len);
+
+      // if something read 
+      if (b>0) {
+        counter++;
+        printf("Try %s\n",buffer); 
+        if (counter%500==0) {
+          printf("%d  number of words tried till now......\n",counter);
+          fflush(stdout);
+        }
+        for(i=0;i<numaccts;i++)
+          //if not cracked till then crack now 
+          if (!cracked[i] && guess(accounts[i],buffer)) {
+            cracked[i]=1;
+            left--;
+            printf("Account %s cracked, password=%s\n",
+                   accounts[i],buffer);
+            fflush(stdout);
+          }
+        
+      } // close of if (b>0)
+      // else if error is there then this part run
+      else if (b<0) {
+        perror("read");
+        //closing the pipe 
+        close(pipeReadSide);
+        // error code 
+        exit(EXIT_FAILURE);
+      }
+    } //close of first if (bytes>0)
+
+}
+   while(bytes!=0 && left>0);
   printf("%d accounts cracked, %d not cracked, %d words tried\n",
          numaccts-left,left,counter);                                      //prints results
   fflush(stdout);
