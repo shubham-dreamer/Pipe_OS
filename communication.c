@@ -26,20 +26,40 @@ int main(int argc,char *argv[]) {                 //argc for argument count  and
     fflush(stderr);
     exit(EXIT_FAILURE);
   }
-  
-  
+  // now we wait for the 2 children which are working 
+  //we should be careful that every process is dead when program exits
+  //waitpid() waits only for terminated children, to change this behaviour via the options argument such as WIFEXITED, WEXITSTATUS is used.
+  pid=wait(&status);
+  if (WIFEXITED(status)) {					
+      printf("status: exit(%d)\n",
+             WEXITSTATUS(status));
+      fflush(stdout);
+  }
+
+  // if abnormal termination is there
+  if (!(WIFEXITED(status) && WEXITSTATUS(status)==0)) {
+    // to kill the other process 
+    if (pid==pid1)
+      kill(pid2,2);
+    else if (pid==pid2)
+      kill(pid1,2);
+    
+	// waiting for the second one 
+    wait(NULL);
+    fprintf(stderr,"Error is there so program stopped!\n");
+    fflush(stderr);
+    exit(EXIT_FAILURE);
+  }
+ printf("Process %d has finished!\n",(int)pid);
+  fflush(stdout);
+  /* normal wait for the second process */
+  pid=wait(NULL);
+  printf("Process %d has completed!\n",(int)pid);
+  fflush(stdout);
+
+  return 0;
 
 }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   //producer process 
  
