@@ -26,7 +26,19 @@ int main(int argc,char *argv[]) {                 //argc for argument count  and
     fflush(stderr);
     exit(EXIT_FAILURE);
   }
-  // now we wait for the 2 children which are working 
+pipe(thePipe);
+pid1 =fork();
+if(pid1 == 0){	
+producer(thePipe[1],"numaccts.txt");	
+}
+pid2 = fork();
+if(pid2 == 0){
+	consumer(thePipe[0]);
+}
+wait(NULL);            // now we wait for the 2 children which are working
+WAIT(NULL);
+  
+  
   //we should be careful that every process is dead when program exits
   //waitpid() waits only for terminated children, to change this behaviour via the options argument such as WIFEXITED, WEXITSTATUS is used.
   pid=wait(&status);
@@ -165,7 +177,7 @@ void consumer(int pipeReadSide) {
 
 }
    while(bytes!=0 && left>0);
-  printf("%d accounts cracked, %d not cracked, %d words tried\n",
+  printf(" accounts cracked:%d, not cracked:%d, words tried:%d \n",
          numaccts-left,left,counter);                                      //prints results
   fflush(stdout);
 
