@@ -36,7 +36,7 @@ if(pid2 == 0){
 	consumer(thePipe[0]);
 }
 wait(NULL);            // now we wait for the 2 children which are working
-WAIT(NULL);
+wait(NULL);
   
   
   //we should be careful that every process is dead when program exits
@@ -68,16 +68,13 @@ WAIT(NULL);
   pid=wait(NULL);
   printf("Process %d has completed!\n",(int)pid);
   fflush(stdout);
-
   return 0;
 
 }
-  
   //producer process 
  
 void producer(int pipeWriteSide,char* filename) {
-  
-  static char buffer[BUFFER_SIZE];
+   static char buffer[BUFFER_SIZE];
   static char w[BUFFER_SIZE];
   FILE *instream;
   int counter=0;
@@ -101,10 +98,8 @@ void producer(int pipeWriteSide,char* filename) {
 	  //  for sending  size of the word 
       if(write(pipeWriteSide,(char*)&len_word,sizeof(int)) != sizeof(int)) 
           break;
-      
       if(write(pipeWriteSide,w,len_word) != len_word)
   	  break;
-      
       counter++;
     }
   }
@@ -114,16 +109,13 @@ void producer(int pipeWriteSide,char* filename) {
 void consumer(int pipeReadSide) {
   static char buffer[BUFFER_SIZE];// creating buffer
   int b,counter,len,left,j;
-  
   int cracked[numaccts];
-
   for(j=0;j<numaccts;j++)
-    cracked[i]=0;
+    cracked[j]=0;
   left=numaccts;
   counter=0;
   printf("%d accounts to crack\n",left);
   fflush(stdout);
-  
   do {
     // word length  
     b=read(pipeReadSide,(char*)&len,sizeof(int));
