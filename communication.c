@@ -65,7 +65,7 @@ int main(int argc,char *argv[]) {                 //argc for argument count  and
 pipe(thePipe);
 pid1 =fork();
 if(pid1 == 0){	
-producer(thePipe[1],"numaccts.txt");	
+producer(thePipe[1],"words3.txt");	
 }
 pid2 = fork();
 if(pid2 == 0){
