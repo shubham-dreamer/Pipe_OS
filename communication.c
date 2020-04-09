@@ -19,7 +19,7 @@ struct Account {
 	char *password;
 };
 int numaccts;
-struct Account accounts[USERS];
+struct Account  accounts[USERS];
 char text[DOCSIZE];
 int readAccounts(const char* file_name)
 {
