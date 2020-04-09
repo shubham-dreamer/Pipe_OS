@@ -9,12 +9,48 @@
 
 #define READ  (thePipe[0])  // index of read end of the pipe
 #define WRITE (thePipe[1])  // index of write end of the pipe
-#define BUFFER_SIZE 250     // buffer size
+#define DOCSIZE 1000
+#DEFINE USERS 100
+#define BUFFER_SIZE 256    // buffer size
 void producer(int fd,char* filename);
 void consumer(int fd);
-
+struct Account{
+	char *id;
+	char *password;
+};
+int numaccts;
+struct Account accounts[USERS];
+char text[DOCSIZE];
+int readAccounts(const char* file_name)
+{
+	int fd1;
+	fd1=open(file_name,O_RDONLY);
+	int n= read(fd1,text,DOCSIZE);
+	char* data =strdup(text);
+	char* line;
+	int i=0;
+	while((line = strsep(&data,"\n")) != NULL)
+	{
+		if(strlen(line)>0){
+			int j=0;
+			char* word;
+			word= strsep(&line," ");
+			accounts[i].id = strdup(word);
+			word =strsep(&line,"\n");
+			accounts[i].password = strdup(word);
+			i++;
+		}
+		else 
+		    break;
+	}
+	return i;
+}
 //main program: creates pipe
 int main(int argc,char *argv[]) {                 //argc for argument count  and argv is argument vector : array of character pointers
+		char* Acc_file;
+		printf("ENTER aCCOUNTS FILE NAME\n");
+		scanf("%s",Acc_file);
+		numaccts = readAccounts(Acc_file);
 
   int thePipe[2];       /* stores the descriptor pair */
   pid_t pid1,pid2,pid;  /* process IDs */
@@ -80,38 +116,49 @@ void producer(int pipeWriteSide,char* filename) {
   int counter=0;
   signal(SIGPIPE,SIG_IGN);      //to ignore the SIGPIPE exception when occured 
   
-  instream=fopen(filename,"r");
-  if (instream==NULL) {
+  instream=open(filename,O_RDONLY);
+  if (instream < 0) {
     fprintf(stderr,"Unable to open %s\n",filename);
     fflush(stderr);
     close(pipeWriteSide);   // close pipe if error is there
     exit(EXIT_FAILURE);
   }
+  char* data;
+  int n =read(instream,data,10000);
+  char* word;
   
-  while(fgets(buffer,BUFFER_SIZE,instream)) {          // for reading words
+  while(fgets(buffer,BUFFER_Size,instream)) {          // for reading words
    
-    if (sscanf(buffer,"%[a-zA-Z1-9./]",w)==1) {  // for reading and sending to consumer,  
-											//[a-zA-Z1-9./]--> used as regular expression for matching one character froma-z and A-Z and 1-9
+    if (strlen(word) > 0) {  // for reading and sending to consumer,  
+											
 
-      int len_word = strlen(word)+1;                       //+1 for null character
+      int len = strlen(word);                       //storing length
       
 	  //  for sending  size of the word 
-      if(write(pipeWriteSide,(char*)&len_word,sizeof(int)) != sizeof(int)) 
+      if(write(pipeWriteSide,(char*)&len,sizeof(int)) != sizeof(int)) 
           break;
-      if(write(pipeWriteSide,w,len_word) != len_word)
+      if(write(pipeWriteSide,w,len) != len)
   	  break;
       counter++;
     }
+    else
+    	break;
   }
    printf("Words sent by producer : %d words\n",counter);               // print counts of words
 }
-// consumer process start
+// consumer process start:::
+int guess(int i, char *passwd)
+{
+	if(strcmp(accounts[i].password,passwd) == 0)
+		return 1;
+	return 0;
+}
 void consumer(int pipeReadSide) {
   static char buffer[BUFFER_SIZE];// creating buffer
   int b,counter,len,left,j;
   int cracked[numaccts];
   for(j=0;j<numaccts;j++)
-    cracked[j]=0;
+    	cracked[j]=0;
   left=numaccts;
   counter=0;
   printf("%d accounts to crack\n",left);
@@ -123,17 +170,17 @@ void consumer(int pipeReadSide) {
     if (b>0) {
 
       if (b!=sizeof(int)) {
-	if (b<0)
-	  perror("read");
-	else {
-	  fprintf(stderr,"read(int) failed (%d read)\n",b);
-	  fflush(stderr);
-	}
+			if (b<0)
+	 			 perror("read");
+			else {
+	 				 fprintf(stderr,"read(int) failed (%d read)\n",b);
+	  				 fflush(stderr);
+			}
 	//closing the pipe
         close(pipeReadSide);
 	//error
         exit(EXIT_FAILURE);
-      }
+      	}
 
       // then the word 
       b=read(pipeReadSide,buffer,len);
